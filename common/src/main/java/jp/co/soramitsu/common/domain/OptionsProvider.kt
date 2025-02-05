@@ -32,18 +32,56 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package jp.co.soramitsu.common.domain
 
+import java.net.HttpURLConnection
+import java.net.URL
 import jp.co.soramitsu.common.BuildConfig
 
 object OptionsProvider {
     var CURRENT_VERSION_CODE: Int = 0
     var CURRENT_VERSION_NAME: String = ""
     var APPLICATION_ID: String = ""
-    const val configCommon = "https://config.polkaswap2.io/${FlavorOptionsProvider.typesFilePath}/common.json"
-    const val configMobile = "https://config.polkaswap2.io/${FlavorOptionsProvider.typesFilePath}/mobile.json"
-    const val configXn = "https://config.polkaswap2.io/${FlavorOptionsProvider.typesFilePath}/xn.json"
+    val configCommon: String by lazy {
+        if (isUrlAccessible(configIpfsCommon)) configIpfsCommon else configGithubCommon
+    }
+    val configMobile: String by lazy {
+        if (isUrlAccessible(configIpfsMobile)) configIpfsCommon else configGithubMobile
+    }
+    val configXn: String by lazy {
+        if (isUrlAccessible(configIpfsXn)) configIpfsCommon else configGithubXn
+    }
+    private const val configIpfsCommon = "https://config.polkaswap2.io/${FlavorOptionsProvider.typesFilePath}/common.json"
+    private const val configGithubCommon = "https://www.arvifox.com/soramitsu/sora2-config/${FlavorOptionsProvider.typesFilePath}/common.json"
+    private const val configIpfsMobile = "https://config.polkaswap2.io/${FlavorOptionsProvider.typesFilePath}/mobile.json"
+    private const val configGithubMobile = "https://www.arvifox.com/soramitsu/sora2-config/${FlavorOptionsProvider.typesFilePath}/mobile.json"
+    private const val configIpfsXn = "https://config.polkaswap2.io/${FlavorOptionsProvider.typesFilePath}/xn.json"
+    private const val configGithubXn = "https://www.arvifox.com/soramitsu/sora2-config/${FlavorOptionsProvider.typesFilePath}/xn.json"
+
     val fileProviderAuthority: String get() = "$APPLICATION_ID.soraFileProvider"
     val header: String by lazy {
         "$APPLICATION_ID/$CURRENT_VERSION_NAME/$CURRENT_VERSION_CODE/${BuildConfig.BUILD_TYPE}/${BuildConfig.FLAVOR}"
+    }
+
+    private fun isUrlAccessible(url: String, maxAttempts: Int = 2): Boolean {
+        repeat(maxAttempts) {
+            var connection: HttpURLConnection? = null
+            try {
+                connection = URL(url).openConnection() as HttpURLConnection
+                connection.apply {
+                    requestMethod = "HEAD"
+                    connectTimeout = 3000
+                    readTimeout = 3000
+                }
+
+                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                    return true
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                connection?.disconnect()
+            }
+        }
+        return false
     }
 
     const val substrate = "substrate"
