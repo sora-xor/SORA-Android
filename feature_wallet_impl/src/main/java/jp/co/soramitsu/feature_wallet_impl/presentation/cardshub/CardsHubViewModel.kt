@@ -263,6 +263,10 @@ class CardsHubViewModel @Inject constructor(
                 resourceManager.getString(R.string.sora_card_verification_successful) to true
             }
 
+            SoraCardCommonVerification.Retry -> {
+                resourceManager.getString(R.string.sora_card_verification_rejected) to false
+            }
+
             else -> {
                 null to false
             }
